@@ -857,6 +857,25 @@ void m68k_set_cpu_type(m68ki_cpu_core* m68ki_cpu, unsigned int cpu_type)
 			CYC_RESET        = 518;
 			HAS_PMMU	 = 0;
 			return;
+		case M68K_CPU_TYPE_MCF5206E:
+			/* ColdFire V2 configuration from the MCF5206E User's Manual.
+			 * Reuse the 68020 timing column until dedicated timing is available. */
+			CPU_TYPE         = CPU_TYPE_COLDFIRE;
+			CPU_ADDRESS_MASK = 0xffffffff;			/* ColdFire is 32-bit */
+			CPU_SR_MASK      = 0xf71f;
+			CYC_INSTRUCTION  = m68ki_cycles[2];
+			CYC_EXCEPTION    = m68ki_exception_cycle_table[2];
+			CYC_BCC_NOTAKE_B = -2;
+			CYC_BCC_NOTAKE_W = 0;
+			CYC_DBCC_F_NOEXP = 0;
+			CYC_DBCC_F_EXP   = 4;
+			CYC_SCC_R_TRUE   = 0;
+			CYC_MOVEM_W      = 2;
+			CYC_MOVEM_L      = 2;
+			CYC_SHIFT        = 0;
+			CYC_RESET        = 518;
+			HAS_PMMU	 = 0;
+			return;
 		case M68K_CPU_TYPE_68030:
 			CPU_TYPE         = CPU_TYPE_030;
 			CPU_ADDRESS_MASK = 0xffffffff;
@@ -1017,6 +1036,43 @@ int m68k_execute(m68ki_cpu_core* m68ki_cpu, int num_cycles)
 	return m68ki_cpu->m68ki_initial_cycles - GET_CYCLES();
 }
 
+int m68k_execute_one(m68ki_cpu_core* m68ki_cpu)
+{
+	if (RESET_CYCLES) {
+		int rc = RESET_CYCLES;
+		RESET_CYCLES = 0;
+		return rc;
+	}
+
+	SET_CYCLES(1);
+	m68ki_cpu->m68ki_initial_cycles = 1;
+	m68ki_check_interrupts(m68ki_cpu);
+
+	if(!CPU_STOPPED)
+	{
+		m68ki_set_address_error_trap();
+#if M68K_SUPPORT_BUS_ERROR
+		m68ki_check_bus_error_trap();
+#endif
+		m68ki_trace_t1();
+		m68ki_use_data_space();
+		m68ki_instr_hook(REG_PC);
+		REG_PPC = REG_PC;
+#if M68K_SUPPORT_BUS_ERROR
+		for (int i = 15; i >= 0; --i)
+			REG_DA_SAVE[i] = REG_DA[i];
+#endif
+		REG_IR = m68ki_read_imm_16(m68ki_cpu);
+		m68ki_instruction_jump_table[REG_IR](m68ki_cpu);
+		USE_CYCLES(CYC_INSTRUCTION[REG_IR]);
+		m68ki_exception_if_trace();
+		REG_PPC = REG_PC;
+	}
+	else
+		SET_CYCLES(0);
+
+	return m68ki_cpu->m68ki_initial_cycles - GET_CYCLES();
+}
 
 int m68k_cycles_run(m68ki_cpu_core* m68ki_cpu)
 {

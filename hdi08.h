@@ -47,6 +47,8 @@ namespace mc68k
 		using CallbackWriteIrq = std::function<void(uint8_t)>;
 		using CallbackReadIsr = std::function<uint8_t(uint8_t)>;
 		using CallbackInitHdi08 = std::function<void()>;
+		using CallbackIcrWrite = std::function<void(uint8_t)>;
+		using CallbackRxStateChanged = std::function<void()>;
 
 		Hdi08();
 
@@ -71,13 +73,18 @@ namespace mc68k
 		{
 			auto isr = PeripheralBase::read8(PeriphAddress::HdiISR);
 
-			// we want new data for transmission
-			isr |= Txde;
+			// By default the interface reports TX ready. Hosts with explicit flow
+			// control can let the read callback provide this flag instead.
+			if(m_forceTxde)
+				isr |= Txde;
 
 			isr = m_readIsrCallback(isr);
 
 			return isr;
 		}
+
+		// When cleared, the read-ISR callback owns the transmit-ready state.
+		void setForceTxde(const bool _force) { m_forceTxde = _force; }
 
 		uint8_t icr()
 		{
@@ -89,6 +96,27 @@ namespace mc68k
 
 		bool canReceiveData();
 
+		// Depth of the not-yet-latched receive queue (words the host has queued but not read).
+		size_t rxDataSize() const { return m_rxData.size(); }
+
+		// Words the host (ColdFire) can still read: the backing receive queue plus the word
+		// currently latched into RXH/RXM/RXL (ISR RXDF set => one word is presented to the host).
+		size_t hostRxWordsAvailable()
+		{
+			const size_t latched = (PeripheralBase::read8(PeriphAddress::HdiISR) & Rxdf) ? 1 : 0;
+			return m_rxData.size() + latched;
+		}
+
+		// Latch the next queued word when the receive register is empty.
+		void relatchRx()
+		{
+			if((PeripheralBase::read8(PeriphAddress::HdiISR) & Rxdf) == 0)
+			{
+				if(pollRx())
+					m_rxStateChangedCallback();
+			}
+		}
+
 		void setRxEmptyCallback(const CallbackRxEmpty& _rxEmptyCallback)
 		{
 			m_rxEmptyCallback = _rxEmptyCallback;
@@ -97,6 +125,8 @@ namespace mc68k
 		void setWriteIrqCallback(const CallbackWriteIrq& _writeIrqCallback);
 		void setReadIsrCallback(const CallbackReadIsr& _readIsrCallback);
 		void setInitHdi08Callback(const CallbackInitHdi08& _callback);
+		void setIcrWriteCallback(const CallbackIcrWrite& _callback);
+		void setRxStateChangedCallback(const CallbackRxStateChanged& _callback);
 
 	private:
 		enum class WordFlags
@@ -130,6 +160,7 @@ namespace mc68k
 		std::deque<uint32_t> m_txData;
 		std::deque<uint32_t> m_rxData;
 		uint32_t m_rxd = 0;
+		uint32_t m_pollRxDepth = 0;
 		std::deque<uint8_t> m_pendingInterruptRequests;
 		uint32_t m_readTimeoutCycles = 0;
 
@@ -137,6 +168,9 @@ namespace mc68k
 		CallbackWriteTx m_writeTxCallback;
 		CallbackWriteIrq m_writeIrqCallback;
 		CallbackReadIsr m_readIsrCallback;
+		bool m_forceTxde = true;
 		CallbackInitHdi08 m_initHdi08Callback;
+		CallbackIcrWrite m_icrWriteCallback;
+		CallbackRxStateChanged m_rxStateChangedCallback;
 	};
 }

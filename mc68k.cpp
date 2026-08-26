@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <atomic>
-#include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <cstring>	// strstr
 
@@ -58,7 +58,11 @@ extern "C"
 
 namespace mc68k
 {
-	Mc68k::Mc68k() : m_gpt(*this), m_sim(*this), m_qsm(*this)
+	Mc68k::Mc68k() : Mc68k(M68K_CPU_TYPE_68020)
+	{
+	}
+
+	Mc68k::Mc68k(const unsigned int _m68kCpuType) : m_gpt(*this), m_sim(*this), m_qsm(*this)
 	{
 		m_cpuStateBuf.fill(0);
 
@@ -69,7 +73,7 @@ namespace mc68k
 
 		getCpuState()->instance = this;
 
-		m68k_set_cpu_type(getCpuState(), M68K_CPU_TYPE_68020);
+		m68k_set_cpu_type(getCpuState(), _m68kCpuType);
 		m68k_init(getCpuState());
 		m68k_set_int_ack_callback(getCpuState(), m68k_int_ack);
 		m68k_set_illg_instr_callback(getCpuState(), m68k_illegal_cbk);
@@ -84,12 +88,24 @@ namespace mc68k
 
 	uint32_t Mc68k::exec()
 	{
-		const auto deltaCycles = m68k_execute(getCpuState(), 1);
+		static const bool s_quiescentPeripheralFast = []()
+		{
+			if(const char* const value = std::getenv("MC68K_QUIESCENT_PERIPHERAL_FAST"))
+				return std::atoi(value) != 0;
+			return true;
+		}();
+
+		const auto deltaCycles = m68k_execute_one(getCpuState());
 		m_cycles += deltaCycles;
 
-		m_gpt.exec(deltaCycles);
-		m_sim.exec(deltaCycles);
-		m_qsm.exec(deltaCycles);
+		if(s_quiescentPeripheralFast && legacyPeripheralsExecQuiescent())
+			m_gpt.advanceQuiescent(deltaCycles);
+		else
+		{
+			m_gpt.exec(deltaCycles);
+			m_sim.exec(deltaCycles);
+			m_qsm.exec(deltaCycles);
+		}
 
 		return deltaCycles;
 	}
@@ -114,6 +130,22 @@ namespace mc68k
 	void Mc68k::onBgnd()
 	{
 		assert(false && "CPU32 BGND instruction hit");
+	}
+
+	bool Mc68k::removePendingInterrupt(const uint8_t _vector, const uint8_t _level)
+	{
+		auto& vecs = m_pendingInterrupts[_level];
+		for(auto it = vecs.begin(); it != vecs.end(); ++it)
+		{
+			if(*it != _vector)
+				continue;
+
+			vecs.erase(it);
+			// Recompute the IPL from what remains; drops the line if this level is now empty.
+			raiseIPL();
+			return true;
+		}
+		return false;
 	}
 
 	uint32_t Mc68k::onIllegalInstruction(uint32_t _opcode)

@@ -146,6 +146,19 @@ namespace mc68k
 		if constexpr (g_tocCount > 3)	execToc<3>(_deltaCycles);
 	}
 
+	bool Gpt::execQuiescent()
+	{
+		const auto flags = PeripheralBase::read16(PeriphAddress::Tflg1);
+		constexpr auto modeled = g_tflg1_ocfMask[0] | g_tflg1_ocfMask[1];
+		return (flags & modeled) == modeled;
+	}
+
+	void Gpt::advanceQuiescent(const uint32_t _deltaCycles)
+	{
+		m_tocLoad[0] += static_cast<int32_t>(_deltaCycles);
+		m_tocLoad[1] += static_cast<int32_t>(_deltaCycles);
+	}
+
 	void Gpt::timerOverflow()
 	{
 		const auto tmsk = read16(PeriphAddress::Tmsk1);

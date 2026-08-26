@@ -103,7 +103,8 @@ enum
 	M68K_CPU_TYPE_68EC040,
 	M68K_CPU_TYPE_68LC040,
 	M68K_CPU_TYPE_68040,
-	M68K_CPU_TYPE_SCC68070
+	M68K_CPU_TYPE_SCC68070,
+	M68K_CPU_TYPE_MCF5206E	/* Freescale ColdFire V2 ISA_A subset. */
 };
 
 /* Registers used by m68k_get_reg() and m68k_set_reg() */
@@ -325,6 +326,9 @@ void m68k_pulse_reset(m68ki_cpu_core* m68ki_cpu);
 
 /* execute num_cycles worth of instructions.  returns number of cycles used */
 int m68k_execute(m68ki_cpu_core* m68ki_cpu, int num_cycles);
+
+/* execute exactly one complete instruction.  returns number of cycles used */
+int m68k_execute_one(m68ki_cpu_core* m68ki_cpu);
 
 /* These functions let you read/write/modify the number of cycles left to run
  * while m68k_execute() is running.

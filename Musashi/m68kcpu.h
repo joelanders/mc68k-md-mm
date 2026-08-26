@@ -187,6 +187,8 @@ typedef uint32 uint64;
 #define CPU_TYPE_LC040  (0x00000100)
 #define CPU_TYPE_040    (0x00000200)
 #define CPU_TYPE_SCC070 (0x00000400)
+#define CPU_TYPE_COLDFIRE (0x00001000)	/* ColdFire V2 (MCF5206E) */
+#define CPU_TYPE_IS_COLDFIRE(A)	((A) == CPU_TYPE_COLDFIRE)
 
 /* Different ways to stop the CPU */
 #define STOP_LEVEL_STOP 1
@@ -421,7 +423,7 @@ typedef uint32 uint64;
 #endif
 
 #if M68K_EMULATE_020
-#define CPU_TYPE_IS_020_PLUS(A)    ((A) & (CPU_TYPE_020 | CPU_TYPE_030 | CPU_TYPE_EC030 | CPU_TYPE_040 | CPU_TYPE_EC040))
+#define CPU_TYPE_IS_020_PLUS(A)    ((A) & (CPU_TYPE_020 | CPU_TYPE_030 | CPU_TYPE_EC030 | CPU_TYPE_040 | CPU_TYPE_EC040 | CPU_TYPE_COLDFIRE))
 	#define CPU_TYPE_IS_020_LESS(A)    1
 #else
 	#define CPU_TYPE_IS_020_PLUS(A)    0
@@ -429,7 +431,7 @@ typedef uint32 uint64;
 #endif
 
 #if M68K_EMULATE_EC020
-#define CPU_TYPE_IS_EC020_PLUS(A)  ((A) & (CPU_TYPE_EC020 | CPU_TYPE_020 | CPU_TYPE_030 | CPU_TYPE_EC030 | CPU_TYPE_040 | CPU_TYPE_EC040))
+#define CPU_TYPE_IS_EC020_PLUS(A)  ((A) & (CPU_TYPE_EC020 | CPU_TYPE_020 | CPU_TYPE_030 | CPU_TYPE_EC030 | CPU_TYPE_040 | CPU_TYPE_EC040 | CPU_TYPE_COLDFIRE))
 	#define CPU_TYPE_IS_EC020_LESS(A)  ((A) & (CPU_TYPE_000 | CPU_TYPE_010 | CPU_TYPE_EC020))
 #else
 	#define CPU_TYPE_IS_EC020_PLUS(A)  CPU_TYPE_IS_020_PLUS(A)
@@ -438,7 +440,7 @@ typedef uint32 uint64;
 
 #if M68K_EMULATE_010
 	#define CPU_TYPE_IS_010(A)         ((A) == CPU_TYPE_010)
-#define CPU_TYPE_IS_010_PLUS(A)    ((A) & (CPU_TYPE_010 | CPU_TYPE_EC020 | CPU_TYPE_020 | CPU_TYPE_EC030 | CPU_TYPE_030 | CPU_TYPE_040 | CPU_TYPE_EC040))
+#define CPU_TYPE_IS_010_PLUS(A)    ((A) & (CPU_TYPE_010 | CPU_TYPE_EC020 | CPU_TYPE_020 | CPU_TYPE_EC030 | CPU_TYPE_030 | CPU_TYPE_040 | CPU_TYPE_EC040 | CPU_TYPE_COLDFIRE))
 #define CPU_TYPE_IS_010_LESS(A)    ((A) & (CPU_TYPE_000 | CPU_TYPE_008 | CPU_TYPE_010))
 #else
 	#define CPU_TYPE_IS_010(A)         0
@@ -937,6 +939,11 @@ struct m68ki_cpu_core_
 	uint dfc;          /* Destination Function Code Register (m68010+) */
 	uint cacr;         /* Cache Control Register (m68020, unemulated) */
 	uint caar;         /* Cache Address Register (m68020, unemulated) */
+	/* ColdFire (MCF5206E) control registers written via MOVEC (Rc encodings per MCF5206E UM) */
+	uint cf_acr0;      /* Rc $004 Access Control Register 0 */
+	uint cf_acr1;      /* Rc $005 Access Control Register 1 */
+	uint cf_rambar;    /* Rc $c04 RAM Base Address Register */
+	uint cf_mbar;      /* Rc $c0f Module Base Address Register */
 	uint ir;           /* Instruction Register */
 	floatx80 fpr[8];     /* FPU Data Register (m68030/040) */
 	uint fpiar;        /* FPU Instruction Address Register (m68040) */
@@ -1616,6 +1623,20 @@ static inline void m68ki_stack_frame_0000(m68ki_cpu_core* m68ki_cpu, uint pc, ui
 	if(CPU_TYPE == CPU_TYPE_000)
 	{
 		m68ki_stack_frame_3word(m68ki_cpu, pc, sr);
+		return;
+	}
+	/* ColdFire uses a single fixed 2-longword frame for ALL exceptions (MCF5206e UM 3.4,
+	 * Fig 3-5), regardless of the 68020 "format 0" layout below:
+	 *   A7+0 : [Format(31-28) | FS[3:0] | Vector[7:0](25-18) | Status Register(15-0)]
+	 *   A7+4 : Program Counter
+	 * The 4-bit format is {4,5,6,7}; its low 2 bits record the pre-exception A7[1:0] so RTE
+	 * can undo the 0-modulo-4 alignment. FS is 0 for non-access-error exceptions. */
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		const uint format = 0x4 | (REG_A[7] & 3);
+		REG_A[7] &= ~3u;								/* align frame to 0-modulo-4 */
+		m68ki_push_32(m68ki_cpu, pc);					/* -> A7+4 */
+		m68ki_push_32(m68ki_cpu, (format << 28) | ((vector & 0xff) << 18) | (sr & 0xffff));	/* -> A7+0 */
 		return;
 	}
 	m68ki_push_16(m68ki_cpu, vector<<2);

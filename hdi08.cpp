@@ -14,6 +14,8 @@ namespace mc68k
 		setWriteIrqCallback(nullptr);
 		setReadIsrCallback(nullptr);
 		setInitHdi08Callback(nullptr);
+		setIcrWriteCallback(nullptr);
+		setRxStateChangedCallback(nullptr);
 
 		write8(PeriphAddress::HdiIVR, 0xf);
 	}
@@ -70,6 +72,7 @@ namespace mc68k
 				MCLOG("HDI08 Initialization, HREQ=" << (_val & Rreq) << ", TREQ=" << (_val & Treq));
 				m_initHdi08Callback();
 			}
+			m_icrWriteCallback(_val);
 			return;
 		case PeriphAddress::HdiCVR:
 			if(_val & Hc)
@@ -124,11 +127,15 @@ namespace mc68k
 
 	void Hdi08::writeRx(uint32_t _word)
 	{
+		static constexpr uint32_t g_maxPollRxDepth = 64;
 		m_rxData.push_back(_word);
 
-		const auto s = isr();
+		// Read the latch state directly: isr() invokes a host callback that may enqueue
+		// another word and re-enter this method.
+		const auto s = PeripheralBase::read8(PeriphAddress::HdiISR);
 
-		if(!(s & Rxdf))
+		// Bound callback-driven nesting and leave excess words queued for the host.
+		if(!(s & Rxdf) && m_pollRxDepth < g_maxPollRxDepth)
 			pollRx();
 	}
 
@@ -136,10 +143,11 @@ namespace mc68k
 	{
 		m_rxData.clear();
 
-		// Clear RXDF flag so firmware knows there's no pending data
+		// Clear RXDF to report that no receive word is pending.
 		auto s = PeripheralBase::read8(PeriphAddress::HdiISR);
 		s &= ~Rxdf;
 		PeripheralBase::write8(PeriphAddress::HdiISR, s);
+		m_rxStateChangedCallback();
 	}
 
 	void Hdi08::exec(const uint32_t _deltaCycles)
@@ -164,6 +172,7 @@ namespace mc68k
 			isr &= ~Rxdf;
 			write8(PeriphAddress::HdiISR, isr);
 			pollRx();
+			m_rxStateChangedCallback();
 		}
 	}
 
@@ -216,6 +225,22 @@ namespace mc68k
 			m_initHdi08Callback = _callback;
 		else
 			m_initHdi08Callback = [] {};
+	}
+
+	void Hdi08::setIcrWriteCallback(const CallbackIcrWrite& _callback)
+	{
+		if(_callback)
+			m_icrWriteCallback = _callback;
+		else
+			m_icrWriteCallback = [](const uint8_t) {};
+	}
+
+	void Hdi08::setRxStateChangedCallback(const CallbackRxStateChanged& _callback)
+	{
+		if(_callback)
+			m_rxStateChangedCallback = _callback;
+		else
+			m_rxStateChangedCallback = [] {};
 	}
 
 	void Hdi08::writeTX(WordFlags _index, const uint8_t _val)
@@ -331,7 +356,9 @@ namespace mc68k
 		m_rxd = m_rxData.front();
 		m_rxData.pop_front();
 
+		++m_pollRxDepth;
 		auto isr = Hdi08::isr();
+		--m_pollRxDepth;
 
 		write8(PeriphAddress::HdiISR, isr | Rxdf);
 		m_readFlags = WordFlags::Mask;

@@ -25,6 +25,8 @@ namespace mc68k
 		void injectInterrupt(uint8_t _vba);
 
 		void exec(uint32_t _deltaCycles) override;
+		bool execQuiescent();
+		void advanceQuiescent(uint32_t _deltaCycles);
 
 		void timerOverflow();
 

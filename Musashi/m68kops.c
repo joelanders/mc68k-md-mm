@@ -22279,6 +22279,20 @@ static void m68k_op_movec_32_cr(m68ki_cpu_core* m68ki_cpu)
 			uint word2 = OPER_I_16();
 
 			m68ki_trace_t0();		   /* auto-disable (see m68kcpu.h) */
+			if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+			{
+				/* MCF5206E control registers, Rc encodings per MCF5206E User's Manual (MOVEC) */
+				switch(word2 & 0xfff)
+				{
+				case 0x002: REG_DA[(word2 >> 12) & 15] = REG_CACR;            return; /* CACR   */
+				case 0x004: REG_DA[(word2 >> 12) & 15] = m68ki_cpu->cf_acr0;   return; /* ACR0   */
+				case 0x005: REG_DA[(word2 >> 12) & 15] = m68ki_cpu->cf_acr1;   return; /* ACR1   */
+				case 0x801: REG_DA[(word2 >> 12) & 15] = REG_VBR;             return; /* VBR    */
+				case 0xc04: REG_DA[(word2 >> 12) & 15] = m68ki_cpu->cf_rambar; return; /* RAMBAR */
+				case 0xc0f: REG_DA[(word2 >> 12) & 15] = m68ki_cpu->cf_mbar;   return; /* MBAR   */
+				default: m68ki_exception_illegal(m68ki_cpu); return;
+				}
+			}
 			switch (word2 & 0xfff)
 			{
 			case 0x000:			   /* SFC */
@@ -22409,6 +22423,20 @@ static void m68k_op_movec_32_rc(m68ki_cpu_core* m68ki_cpu)
 			uint word2 = OPER_I_16();
 
 			m68ki_trace_t0();		   /* auto-disable (see m68kcpu.h) */
+			if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+			{
+				/* MCF5206E control registers, Rc encodings per MCF5206E User's Manual (MOVEC) */
+				switch(word2 & 0xfff)
+				{
+				case 0x002: REG_CACR             = REG_DA[(word2 >> 12) & 15]; return; /* CACR   */
+				case 0x004: m68ki_cpu->cf_acr0   = REG_DA[(word2 >> 12) & 15]; return; /* ACR0   */
+				case 0x005: m68ki_cpu->cf_acr1   = REG_DA[(word2 >> 12) & 15]; return; /* ACR1   */
+				case 0x801: REG_VBR              = REG_DA[(word2 >> 12) & 15]; return; /* VBR    */
+				case 0xc04: m68ki_cpu->cf_rambar = REG_DA[(word2 >> 12) & 15]; return; /* RAMBAR */
+				case 0xc0f: m68ki_cpu->cf_mbar   = REG_DA[(word2 >> 12) & 15]; return; /* MBAR   */
+				default: m68ki_exception_illegal(m68ki_cpu); return;
+				}
+			}
 			switch (word2 & 0xfff)
 			{
 			case 0x000:			   /* SFC */
@@ -28391,9 +28419,7 @@ static void m68k_op_reset(m68ki_cpu_core* m68ki_cpu)
 }
 
 
-/* CPU32 BGND instruction: enter background debug mode.
- * On real hardware, halts CPU for BDM debugger.
- * In the emulator, calls a callback and continues. */
+/* CPU32 BGND instruction: enter background debug mode. */
 static void m68k_op_bgnd(m68ki_cpu_core* m68ki_cpu)
 {
 	if(m68ki_cpu->bgnd_callback)
@@ -29575,6 +29601,21 @@ static void m68k_op_rte_32(m68ki_cpu_core* m68ki_cpu)
 			CPU_RUN_MODE = RUN_MODE_NORMAL;
 			/* Not handling bus fault (9) */
 			m68ki_exception_format_error(m68ki_cpu);
+			return;
+		}
+
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+		{
+			/* ColdFire 2-longword frame (MCF5206e UM 3.4): A7+0 = format/vector | SR,
+			 * A7+4 = PC. Mirrors m68ki_stack_frame_0000's ColdFire branch. */
+			format_word = m68ki_read_16(REG_A[7]) >> 12;		/* 4-bit format at top of frame */
+			new_sr = m68ki_read_16(REG_A[7] + 2);				/* SR = low word of longword 0 */
+			new_pc = m68ki_read_32(REG_A[7] + 4);				/* PC = longword 1 */
+			REG_A[7] += 8 + (format_word & 3);					/* pop frame + undo A7 alignment */
+			m68ki_jump(m68ki_cpu, new_pc);
+			m68ki_set_sr(m68ki_cpu, new_sr);
+			CPU_INSTR_MODE = INSTRUCTION_YES;
+			CPU_RUN_MODE = RUN_MODE_NORMAL;
 			return;
 		}
 

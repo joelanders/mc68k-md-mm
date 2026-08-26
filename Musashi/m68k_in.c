@@ -9269,6 +9269,21 @@ M68KMAKE_OP(rte, 32, ., .)
 			return;
 		}
 
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+		{
+			/* ColdFire 2-longword frame (MCF5206e UM 3.4): A7+0 = format/vector | SR,
+			 * A7+4 = PC. Mirrors m68ki_stack_frame_0000's ColdFire branch. */
+			format_word = m68ki_read_16(REG_A[7]) >> 12;		/* 4-bit format at top of frame */
+			new_sr = m68ki_read_16(REG_A[7] + 2);				/* SR = low word of longword 0 */
+			new_pc = m68ki_read_32(REG_A[7] + 4);				/* PC = longword 1 */
+			REG_A[7] += 8 + (format_word & 3);					/* pop frame + undo A7 alignment */
+			m68ki_jump(new_pc);
+			m68ki_set_sr(new_sr);
+			CPU_INSTR_MODE = INSTRUCTION_YES;
+			CPU_RUN_MODE = RUN_MODE_NORMAL;
+			return;
+		}
+
 		/* Otherwise it's 020 */
 rte_loop:
 		format_word = m68ki_read_16(REG_A[7]+6) >> 12;

@@ -59,6 +59,11 @@ namespace mc68k
 
 		void injectInterrupt(ScsrBits _scsrBits);
 		void exec(uint32_t _deltaCycles) override;
+		bool execQuiescent() const
+		{
+			return m_nextQueue == 0xff && m_pendingTxDataCounter == 0
+				&& m_sciRxDelay == 0 && m_sciRxDataEmpty;
+		}
 
 		uint16_t spcr0()			{ return PeripheralBase::read16(PeriphAddress::Spcr0); }
 		uint16_t spcr1()			{ return PeripheralBase::read16(PeriphAddress::Spcr1); }

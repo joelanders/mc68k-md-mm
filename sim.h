@@ -33,6 +33,7 @@ namespace mc68k
 		void write16(PeriphAddress _addr, uint16_t _val) override;
 
 		void exec(uint32_t _deltaCycles) override;
+		bool execQuiescent() const { return m_timerLoadValue == 0; }
 
 		Port& getPortE() { return m_portE; }
 		Port& getPortF() { return m_portF; }

@@ -15,7 +15,7 @@ namespace mc68k
 	class Mc68k
 	{
 	public:
-		static constexpr uint32_t CpuStateSize = 608;
+		static constexpr uint32_t CpuStateSize = 640;	// headroom for ColdFire control registers added to m68ki_cpu_core
 
 		Mc68k();
 		virtual ~Mc68k();
@@ -24,6 +24,14 @@ namespace mc68k
 
 		void injectInterrupt(uint8_t _vector, uint8_t _level);
 		bool hasPendingInterrupt(uint8_t _vector, uint8_t _level) const;
+		bool legacyPeripheralsExecQuiescent()
+		{
+			return m_gpt.execQuiescent() && m_sim.execQuiescent()
+				&& m_qsm.execQuiescent();
+		}
+		// Withdraw a queued interrupt when a level-sensitive source deasserts
+		// before acknowledgement, then recompute the active interrupt level.
+		bool removePendingInterrupt(uint8_t _vector, uint8_t _level);
 
 		virtual void onReset() {}
 		virtual void onBgnd();
@@ -103,6 +111,9 @@ namespace mc68k
 		bool dumpAssembly(const std::string& _filename, uint32_t _first, uint32_t _count, bool _splitFunctions = true);
 		
 	protected:
+		// Select the Musashi CPU type. The public constructor retains the 68020 default.
+		explicit Mc68k(unsigned int _m68kCpuType);
+
 		void raiseIPL();
 
 		std::array<uint8_t, CpuStateSize> m_cpuStateBuf;
