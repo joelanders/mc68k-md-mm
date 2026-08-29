@@ -95,8 +95,7 @@ namespace mc68k
 			return true;
 		}();
 
-		const auto deltaCycles = m68k_execute_one(getCpuState());
-		m_cycles += deltaCycles;
+		const auto deltaCycles = execInstruction();
 
 		if(s_quiescentPeripheralFast && legacyPeripheralsExecQuiescent())
 			m_gpt.advanceQuiescent(deltaCycles);
@@ -107,6 +106,13 @@ namespace mc68k
 			m_qsm.exec(deltaCycles);
 		}
 
+		return deltaCycles;
+	}
+
+	uint32_t Mc68k::execInstruction()
+	{
+		const auto deltaCycles = m68k_execute_one(getCpuState());
+		m_cycles += deltaCycles;
 		return deltaCycles;
 	}
 
