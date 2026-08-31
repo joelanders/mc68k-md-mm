@@ -4598,6 +4598,15 @@ M68KMAKE_OP(divl, 32, ., d)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -4606,8 +4615,14 @@ M68KMAKE_OP(divl, 32, ., d)
 				}
 			}
 
+			/* ColdFire encodes REMS/REMU in the two-register form.  Unlike the
+			 * 68020 DIVSL/DIVUL form, it leaves the dividend register unchanged
+			 * and writes only the remainder register.  Equal registers select the
+			 * ordinary quotient-only DIVS/DIVU operation. */
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+				|| (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -4714,7 +4729,9 @@ M68KMAKE_OP(divl, 32, ., d)
 				}
 
 				REG_D[word2 & 7] = remainder;
-				REG_D[(word2 >> 12) & 7] = quotient;
+				if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+					|| (word2 & 7) == ((word2 >> 12) & 7))
+					REG_D[(word2 >> 12) & 7] = quotient;
 
 				FLAG_N = NFLAG_32(quotient);
 				FLAG_Z = quotient;
@@ -4729,6 +4746,14 @@ M68KMAKE_OP(divl, 32, ., d)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -4737,14 +4762,18 @@ M68KMAKE_OP(divl, 32, ., d)
 					REG_D[word2 & 7] = 0;
 					return;
 				}
-				REG_D[word2 & 7] = MAKE_INT_32(dividend_lo) % MAKE_INT_32(divisor);
-				quotient = REG_D[(word2 >> 12) & 7] = MAKE_INT_32(dividend_lo) / MAKE_INT_32(divisor);
+				remainder = MAKE_INT_32(dividend_lo) % MAKE_INT_32(divisor);
+				quotient = MAKE_INT_32(dividend_lo) / MAKE_INT_32(divisor);
 			}
 			else
 			{
-				REG_D[word2 & 7] = MASK_OUT_ABOVE_32(dividend_lo) % MASK_OUT_ABOVE_32(divisor);
-				quotient = REG_D[(word2 >> 12) & 7] = MASK_OUT_ABOVE_32(dividend_lo) / MASK_OUT_ABOVE_32(divisor);
+				remainder = MASK_OUT_ABOVE_32(dividend_lo) % MASK_OUT_ABOVE_32(divisor);
+				quotient = MASK_OUT_ABOVE_32(dividend_lo) / MASK_OUT_ABOVE_32(divisor);
 			}
+			REG_D[word2 & 7] = remainder;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+				|| (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
