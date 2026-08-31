@@ -13348,6 +13348,15 @@ static void m68k_op_divl_32_d(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -13357,7 +13366,8 @@ static void m68k_op_divl_32_d(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -13479,6 +13489,14 @@ static void m68k_op_divl_32_d(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -13559,6 +13577,15 @@ static void m68k_op_divl_32_ai(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -13568,7 +13595,8 @@ static void m68k_op_divl_32_ai(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -13690,6 +13718,14 @@ static void m68k_op_divl_32_ai(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -13770,6 +13806,15 @@ static void m68k_op_divl_32_pi(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -13779,7 +13824,8 @@ static void m68k_op_divl_32_pi(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -13901,6 +13947,14 @@ static void m68k_op_divl_32_pi(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -13981,6 +14035,15 @@ static void m68k_op_divl_32_pd(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -13990,7 +14053,8 @@ static void m68k_op_divl_32_pd(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -14112,6 +14176,14 @@ static void m68k_op_divl_32_pd(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -14192,6 +14264,15 @@ static void m68k_op_divl_32_di(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -14201,7 +14282,8 @@ static void m68k_op_divl_32_di(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -14323,6 +14405,14 @@ static void m68k_op_divl_32_di(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -14403,6 +14493,15 @@ static void m68k_op_divl_32_ix(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -14412,7 +14511,8 @@ static void m68k_op_divl_32_ix(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -14534,6 +14634,14 @@ static void m68k_op_divl_32_ix(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -14614,6 +14722,15 @@ static void m68k_op_divl_32_aw(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -14623,7 +14740,8 @@ static void m68k_op_divl_32_aw(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -14745,6 +14863,14 @@ static void m68k_op_divl_32_aw(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -14825,6 +14951,15 @@ static void m68k_op_divl_32_al(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -14834,7 +14969,8 @@ static void m68k_op_divl_32_al(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -14956,6 +15092,14 @@ static void m68k_op_divl_32_al(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -15036,6 +15180,15 @@ static void m68k_op_divl_32_pcdi(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -15045,7 +15198,8 @@ static void m68k_op_divl_32_pcdi(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -15167,6 +15321,14 @@ static void m68k_op_divl_32_pcdi(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -15247,6 +15409,15 @@ static void m68k_op_divl_32_pcix(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -15256,7 +15427,8 @@ static void m68k_op_divl_32_pcix(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -15378,6 +15550,14 @@ static void m68k_op_divl_32_pcix(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;
@@ -15458,6 +15638,15 @@ static void m68k_op_divl_32_i(m68ki_cpu_core* m68ki_cpu)
 				{
 					quotient  = (uint64)((sint64)((sint32)dividend) / (sint64)((sint32)divisor));
 					remainder = (uint64)((sint64)((sint32)dividend) % (sint64)((sint32)divisor));
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE)
+						&& (sint64)quotient != (sint64)((sint32)quotient))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 				}
 				else					/* unsigned */
 				{
@@ -15467,7 +15656,8 @@ static void m68k_op_divl_32_i(m68ki_cpu_core* m68ki_cpu)
 			}
 
 			REG_D[word2 & 7] = remainder;
-			REG_D[(word2 >> 12) & 7] = quotient;
+			if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE) || (word2 & 7) == ((word2 >> 12) & 7))
+				REG_D[(word2 >> 12) & 7] = quotient;
 
 			FLAG_N = NFLAG_32(quotient);
 			FLAG_Z = quotient;
@@ -15589,6 +15779,14 @@ static void m68k_op_divl_32_i(m68ki_cpu_core* m68ki_cpu)
 				/* Special case in divide */
 				if(dividend_lo == 0x80000000 && divisor == 0xffffffff)
 				{
+					if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+					{
+						FLAG_N = NFLAG_CLEAR;
+						FLAG_Z = ZFLAG_CLEAR;
+						FLAG_V = VFLAG_SET;
+						FLAG_C = CFLAG_CLEAR;
+						return;
+					}
 					FLAG_N = NFLAG_SET;
 					FLAG_Z = ZFLAG_CLEAR;
 					FLAG_V = VFLAG_CLEAR;

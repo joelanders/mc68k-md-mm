@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 
 # Set the project name
 project(68kEmu)
+
+include(CTest)
   
 # Add sub directories
 add_library(68kEmu STATIC)
@@ -45,3 +47,12 @@ source_group("source" FILES ${SOURCES})
 source_group("source\\Musashi" FILES ${SOURCES_MUSASHI})
 
 set_property(TARGET 68kEmu PROPERTY CXX_STANDARD 17)
+
+if(BUILD_TESTING)
+	add_executable(mc68kColdFireDivideTest test/coldfire_div_test.cpp)
+	target_link_libraries(mc68kColdFireDivideTest PRIVATE 68kEmu)
+	target_include_directories(mc68kColdFireDivideTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+	target_compile_features(mc68kColdFireDivideTest PRIVATE cxx_std_17)
+	add_test(NAME mc68kColdFireDivideTest COMMAND mc68kColdFireDivideTest)
+	set_tests_properties(mc68kColdFireDivideTest PROPERTIES LABELS "UnitTest")
+endif()
