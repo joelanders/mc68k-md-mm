@@ -113,6 +113,9 @@ namespace mc68k
 	protected:
 		// Select the Musashi CPU type. The public constructor retains the 68020 default.
 		explicit Mc68k(unsigned int _m68kCpuType);
+		// Execute one processor instruction and account its cycles without
+		// advancing the generic on-chip peripheral models.
+		uint32_t execInstruction();
 
 		void raiseIPL();
 
