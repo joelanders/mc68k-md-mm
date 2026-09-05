@@ -70,4 +70,9 @@ if(BUILD_TESTING)
 	target_compile_features(mc68kColdFireDivideTest PRIVATE cxx_std_17)
 	add_test(NAME mc68kColdFireDivideTest COMMAND mc68kColdFireDivideTest)
 	set_tests_properties(mc68kColdFireDivideTest PROPERTIES LABELS "UnitTest")
+
+	# Integrations can require this fixture so focused CTest selections still
+	# exercise the instruction and host-port contracts they depend on.
+	set_tests_properties(mc68kColdFireTimingTest mc68kHdi08ReceiveTest
+		mc68kColdFireDivideTest PROPERTIES FIXTURES_SETUP Mc68kCore)
 endif()
