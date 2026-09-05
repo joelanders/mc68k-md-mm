@@ -3,6 +3,7 @@
 #include <array>
 #include <deque>
 #include <functional>
+#include <utility>
 
 #include "peripheralBase.h"
 
@@ -123,6 +124,13 @@ namespace mc68k
 		}
 		void setWriteTxCallback(const CallbackWriteTx& _writeTxCallback);
 		void setWriteIrqCallback(const CallbackWriteIrq& _writeIrqCallback);
+		// Optional shared command lifecycle. Configure and call on the machine
+		// owner; without these callbacks legacy synchronous acknowledgement remains.
+		void setHostCommandCallbacks(std::function<bool()> _pending, std::function<void()> _cancel)
+		{
+			m_hostCommandPending = std::move(_pending);
+			m_cancelHostCommand = std::move(_cancel);
+		}
 		void setReadIsrCallback(const CallbackReadIsr& _readIsrCallback);
 		void setInitHdi08Callback(const CallbackInitHdi08& _callback);
 		void setIcrWriteCallback(const CallbackIcrWrite& _callback);
@@ -167,6 +175,8 @@ namespace mc68k
 		CallbackRxEmpty m_rxEmptyCallback;
 		CallbackWriteTx m_writeTxCallback;
 		CallbackWriteIrq m_writeIrqCallback;
+		std::function<bool()> m_hostCommandPending;
+		std::function<void()> m_cancelHostCommand;
 		CallbackReadIsr m_readIsrCallback;
 		bool m_forceTxde = true;
 		CallbackInitHdi08 m_initHdi08Callback;

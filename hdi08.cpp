@@ -32,6 +32,8 @@ namespace mc68k
 		case PeriphAddress::HdiTXM:	return readRX(WordFlags::M);
 		case PeriphAddress::HdiTXL:	return readRX(WordFlags::L);
 		case PeriphAddress::HdiCVR:
+			if(m_hostCommandPending)
+				return (PeripheralBase::read8(_addr) & ~Hc) | (m_hostCommandPending() ? Hc : 0);
 			return PeripheralBase::read8(_addr);
 		}
 		const auto r = PeripheralBase::read8(_addr);
@@ -80,12 +82,16 @@ namespace mc68k
 				const auto addr = static_cast<uint8_t>((_val & Hv) << 1);
 //				MCLOG("HDI08 Host Vector Interrupt Request, interrupt vector = " << MCHEXN(addr, 2));
 				m_writeIrqCallback(addr);
+				if(m_hostCommandPending)
+					return; // HC follows DSP acceptance, not callback return.
 
 				const auto val = read8(PeriphAddress::HdiCVR);
 				PeripheralBase::write8(PeriphAddress::HdiCVR, val & ~Hc);
 
 //				write8(_addr, _val & ~Hc);
 			}
+			else if(m_cancelHostCommand)
+				m_cancelHostCommand();
 			return;
 		case PeriphAddress::HdiTXH:	writeTX(WordFlags::H, _val);	return;
 		case PeriphAddress::HdiTXM:	writeTX(WordFlags::M, _val);	return;
