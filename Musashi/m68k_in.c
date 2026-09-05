@@ -2034,11 +2034,13 @@ M68KMAKE_OP(asr, 32, r, .)
 	uint* r_dst = &DY;
 	uint shift = DX & 0x3f;
 	uint src = *r_dst;
-	uint res = src >> shift;
+	uint res = shift < 32 ? src >> shift : 0;
 
 	if(shift != 0)
 	{
-		USE_CYCLES(shift<<CYC_SHIFT);
+		// MCF5206EUM table 3-8: the base cycle covers any register count.
+		if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+			USE_CYCLES(shift<<CYC_SHIFT);
 
 		if(shift < 32)
 		{
@@ -2155,7 +2157,7 @@ M68KMAKE_OP(asl, 32, s, .)
 	FLAG_Z = res;
 	FLAG_X = FLAG_C = src >> (24-shift);
 	src &= m68ki_shift_32_table[shift + 1];
-	FLAG_V = (!(src == 0 || src == m68ki_shift_32_table[shift + 1]))<<7;
+	FLAG_V = CPU_TYPE_IS_COLDFIRE(CPU_TYPE) ? VFLAG_CLEAR : (!(src == 0 || src == m68ki_shift_32_table[shift + 1]))<<7;
 }
 
 
@@ -2238,11 +2240,13 @@ M68KMAKE_OP(asl, 32, r, .)
 	uint* r_dst = &DY;
 	uint shift = DX & 0x3f;
 	uint src = *r_dst;
-	uint res = MASK_OUT_ABOVE_32(src << shift);
+	uint res = shift < 32 ? MASK_OUT_ABOVE_32(src << shift) : 0;
 
 	if(shift != 0)
 	{
-		USE_CYCLES(shift<<CYC_SHIFT);
+		// MCF5206EUM table 3-8: the base cycle covers any register count.
+		if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+			USE_CYCLES(shift<<CYC_SHIFT);
 
 		if(shift < 32)
 		{
@@ -2251,7 +2255,7 @@ M68KMAKE_OP(asl, 32, r, .)
 			FLAG_N = NFLAG_32(res);
 			FLAG_Z = res;
 			src &= m68ki_shift_32_table[shift + 1];
-			FLAG_V = (!(src == 0 || src == m68ki_shift_32_table[shift + 1]))<<7;
+			FLAG_V = CPU_TYPE_IS_COLDFIRE(CPU_TYPE) ? VFLAG_CLEAR : (!(src == 0 || src == m68ki_shift_32_table[shift + 1]))<<7;
 			return;
 		}
 
@@ -2259,7 +2263,7 @@ M68KMAKE_OP(asl, 32, r, .)
 		FLAG_X = FLAG_C = ((shift == 32 ? src & 1 : 0))<<8;
 		FLAG_N = NFLAG_CLEAR;
 		FLAG_Z = ZFLAG_SET;
-		FLAG_V = (!(src == 0))<<7;
+		FLAG_V = CPU_TYPE_IS_COLDFIRE(CPU_TYPE) ? VFLAG_CLEAR : (!(src == 0))<<7;
 		return;
 	}
 
@@ -5468,11 +5472,13 @@ M68KMAKE_OP(lsr, 32, r, .)
 	uint* r_dst = &DY;
 	uint shift = DX & 0x3f;
 	uint src = *r_dst;
-	uint res = src >> shift;
+	uint res = shift < 32 ? src >> shift : 0;
 
 	if(shift != 0)
 	{
-		USE_CYCLES(shift<<CYC_SHIFT);
+		// MCF5206EUM table 3-8: the base cycle covers any register count.
+		if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+			USE_CYCLES(shift<<CYC_SHIFT);
 
 		if(shift < 32)
 		{
@@ -5650,11 +5656,13 @@ M68KMAKE_OP(lsl, 32, r, .)
 	uint* r_dst = &DY;
 	uint shift = DX & 0x3f;
 	uint src = *r_dst;
-	uint res = MASK_OUT_ABOVE_32(src << shift);
+	uint res = shift < 32 ? MASK_OUT_ABOVE_32(src << shift) : 0;
 
 	if(shift != 0)
 	{
-		USE_CYCLES(shift<<CYC_SHIFT);
+		// MCF5206EUM table 3-8: the base cycle covers any register count.
+		if(!CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+			USE_CYCLES(shift<<CYC_SHIFT);
 
 		if(shift < 32)
 		{

@@ -100,6 +100,65 @@ namespace
 		}
 		std::printf("Bcc matrix: %u executions, all conditions/CCR values, both widths/directions/CPU models passed\n", cases);
 	}
+
+	void shiftMatrix()
+	{
+		// MCF5206EUM table 3-8: register-count shifts take one core cycle.
+		// CFPRM ASL/ASR: ColdFire always clears V; 68020 ASL detects overflow.
+		// A bit-at-a-time oracle checks both encodings and counts beyond 32 bits.
+		unsigned cases = 0;
+		for(unsigned type : {M68K_CPU_TYPE_MCF5206E, M68K_CPU_TYPE_68020})
+		{
+			TestCpu cpu(type);
+			for(bool immediate : {false, true})
+				for(unsigned op : {0xe2a0, 0xe3a0, 0xe2a8, 0xe3a8}) // ASR, ASL, LSR, LSL D1,D0
+					for(unsigned count = immediate ? 1 : 0; count < (immediate ? 9 : 66); ++count)
+						for(uint32_t src : {0u, 1u, 0x40000000u, 0x80000000u, 0x80000001u, 0xffffffffu})
+							for(bool initialX : {false, true})
+							{
+								const unsigned shift = count & 63;
+								const bool left = op & 0x100;
+								uint32_t result = src;
+								bool carry = false, extend = initialX, overflow = false;
+								for(unsigned bit = 0; bit < shift; ++bit)
+								{
+									const bool sign = result & 0x80000000u;
+									carry = left ? sign : (result & 1);
+									result = left ? result << 1 : result >> 1;
+									if(op == 0xe2a0 && sign) result |= 0x80000000u;
+									if(type == M68K_CPU_TYPE_68020 && op == 0xe3a0
+										&& sign != bool(result & 0x80000000u)) overflow = true;
+									extend = carry;
+								}
+								const unsigned expectedSr = 0x2700 | (extend ? 16 : 0)
+									| (result & 0x80000000u ? 8 : 0) | (result == 0 ? 4 : 0)
+									| (overflow ? 2 : 0) | (carry ? 1 : 0);
+								const auto opcode = immediate ? (op & ~0xe20) | ((count & 7) << 9) : op;
+								cpu.write16(0x20, opcode);
+								cpu.setPC(0x20);
+								m68k_set_reg(cpu.getCpuState(), M68K_REG_SR, 0x270f | (initialX ? 16 : 0));
+								m68k_set_reg(cpu.getCpuState(), M68K_REG_D0, src);
+								m68k_set_reg(cpu.getCpuState(), M68K_REG_D1, count);
+								const auto before = failures;
+								check("shift cycles", cpu.execInstruction(),
+									type == M68K_CPU_TYPE_MCF5206E ? 1 : immediate
+										? (op == 0xe3a0 ? 8 : op == 0xe2a0 ? 6 : 4)
+										: shift + (op == 0xe3a0 ? 8 : 6));
+								check("shift result", m68k_get_reg(cpu.getCpuState(), M68K_REG_D0), result);
+								check("shift CCR", m68k_get_reg(cpu.getCpuState(), M68K_REG_SR), expectedSr);
+								check("shift count", m68k_get_reg(cpu.getCpuState(), M68K_REG_D1), count);
+								check("shift PC", cpu.getPC(), 0x22);
+								if(before != failures)
+								{
+									std::fprintf(stderr, "type=%u shift opcode=%04x count=%u src=%08x X=%u\n",
+										type, opcode, count, src, initialX);
+									return;
+								}
+								++cases;
+							}
+		}
+		std::printf("Shift matrix: %u executions, register/immediate counts/results/CCR, both CPU models passed\n", cases);
+	}
 }
 
 int main()
@@ -134,5 +193,6 @@ int main()
 	instruction("BNE.W backward taken", {0x6600, 0xfffc}, 2, 6, 0x2700, 0x1e);
 	instruction("BNE.W backward untaken", {0x6600, 0xfffc}, 3, 6, 0x2704, 0x24);
 	conditionalBranchMatrix();
+	shiftMatrix();
 	return failures ? 1 : 0;
 }
