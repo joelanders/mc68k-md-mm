@@ -50,6 +50,56 @@ namespace
 			if(expectedPc) check("branch PC", cpu.getPC(), expectedPc);
 		}
 	}
+
+	void conditionalBranchMatrix()
+	{
+		// CFPRM Bcc condition table and MCF5206EUM table 3-11. Sweep X too:
+		// it must neither affect the decision nor be changed by a branch.
+		// https://www.nxp.com/docs/en/reference-manual/CFPRM.pdf
+		// https://www.nxp.jp/docs/en/data-sheet/MCF5206EUM.pdf
+		unsigned cases = 0;
+		for(unsigned type : {M68K_CPU_TYPE_MCF5206E, M68K_CPU_TYPE_68020})
+		{
+			TestCpu cpu(type);
+			for(unsigned flags = 0; flags < 32; ++flags)
+			{
+				const bool c = flags & 1, v = flags & 2, z = flags & 4, n = flags & 8;
+				const std::array<bool, 14> conditions{
+					!c && !z, c || z, !c, c, !z, z, !v, v,
+					!n, n, n == v, n != v, !z && n == v, z || n != v};
+				for(unsigned condition = 2; condition < 16; ++condition)
+					for(bool word : {false, true})
+						for(int displacement : {-16, -2, 2, 16})
+						{
+							const auto opcode = static_cast<uint16_t>(0x6000 | (condition << 8)
+								| (word ? 0 : static_cast<uint8_t>(displacement)));
+							cpu.write16(0x20, opcode);
+							if(word) cpu.write16(0x22, static_cast<uint16_t>(displacement));
+							cpu.setPC(0x20);
+							m68k_set_reg(cpu.getCpuState(), M68K_REG_SR, 0x2700 | flags);
+							m68k_set_reg(cpu.getCpuState(), M68K_REG_D0, 0x12345678);
+							const bool taken = conditions[condition - 2];
+							const unsigned expectedCycles = type == M68K_CPU_TYPE_68020
+								? (taken ? 6 : word ? 6 : 4)
+								: displacement < 0 ? (taken ? 2 : 3) : (taken ? 3 : 1);
+							const unsigned expectedPc = taken ? 0x22 + displacement : word ? 0x24 : 0x22;
+							const auto before = failures;
+							check("Bcc matrix cycles", cpu.execInstruction(), expectedCycles);
+							check("Bcc matrix PC", cpu.getPC(), expectedPc);
+							check("Bcc matrix SR", m68k_get_reg(cpu.getCpuState(), M68K_REG_SR), 0x2700 | flags);
+							check("Bcc matrix D0", m68k_get_reg(cpu.getCpuState(), M68K_REG_D0), 0x12345678);
+							if(failures != before)
+							{
+								std::fprintf(stderr, "type=%u opcode=%04x CCR=%02x displacement=%d\n",
+									type, opcode, flags, displacement);
+								return;
+							}
+							++cases;
+						}
+			}
+		}
+		std::printf("Bcc matrix: %u executions, all conditions/CCR values, both widths/directions/CPU models passed\n", cases);
+	}
 }
 
 int main()
@@ -83,5 +133,6 @@ int main()
 	instruction("BNE.W forward untaken", {0x6600, 0x0006}, 1, 6, 0x2704, 0x24);
 	instruction("BNE.W backward taken", {0x6600, 0xfffc}, 2, 6, 0x2700, 0x1e);
 	instruction("BNE.W backward untaken", {0x6600, 0xfffc}, 3, 6, 0x2704, 0x24);
+	conditionalBranchMatrix();
 	return failures ? 1 : 0;
 }
