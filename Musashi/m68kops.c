@@ -4044,6 +4044,11 @@ static void m68k_op_asl_16_al(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bhi_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_HI(), 0);
+		return;
+	}
 	if(COND_HI())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4056,6 +4061,11 @@ static void m68k_op_bhi_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bls_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_LS(), 0);
+		return;
+	}
 	if(COND_LS())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4068,6 +4078,11 @@ static void m68k_op_bls_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bcc_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_CC(), 0);
+		return;
+	}
 	if(COND_CC())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4080,6 +4095,11 @@ static void m68k_op_bcc_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bcs_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_CS(), 0);
+		return;
+	}
 	if(COND_CS())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4092,6 +4112,11 @@ static void m68k_op_bcs_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bne_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_NE(), 0);
+		return;
+	}
 	if(COND_NE())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4104,6 +4129,11 @@ static void m68k_op_bne_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_beq_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_EQ(), 0);
+		return;
+	}
 	if(COND_EQ())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4116,6 +4146,11 @@ static void m68k_op_beq_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bvc_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_VC(), 0);
+		return;
+	}
 	if(COND_VC())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4128,6 +4163,11 @@ static void m68k_op_bvc_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bvs_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_VS(), 0);
+		return;
+	}
 	if(COND_VS())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4140,6 +4180,11 @@ static void m68k_op_bvs_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bpl_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_PL(), 0);
+		return;
+	}
 	if(COND_PL())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4152,6 +4197,11 @@ static void m68k_op_bpl_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bmi_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_MI(), 0);
+		return;
+	}
 	if(COND_MI())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4164,6 +4214,11 @@ static void m68k_op_bmi_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bge_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_GE(), 0);
+		return;
+	}
 	if(COND_GE())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4176,6 +4231,11 @@ static void m68k_op_bge_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_blt_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_LT(), 0);
+		return;
+	}
 	if(COND_LT())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4188,6 +4248,11 @@ static void m68k_op_blt_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bgt_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_GT(), 0);
+		return;
+	}
 	if(COND_GT())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4200,6 +4265,11 @@ static void m68k_op_bgt_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_ble_8(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_LE(), 0);
+		return;
+	}
 	if(COND_LE())
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -4212,6 +4282,11 @@ static void m68k_op_ble_8(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bhi_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_HI(), 1);
+		return;
+	}
 	if(COND_HI())
 	{
 		uint offset = OPER_I_16();
@@ -4227,6 +4302,11 @@ static void m68k_op_bhi_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bls_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_LS(), 1);
+		return;
+	}
 	if(COND_LS())
 	{
 		uint offset = OPER_I_16();
@@ -4242,6 +4322,11 @@ static void m68k_op_bls_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bcc_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_CC(), 1);
+		return;
+	}
 	if(COND_CC())
 	{
 		uint offset = OPER_I_16();
@@ -4257,6 +4342,11 @@ static void m68k_op_bcc_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bcs_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_CS(), 1);
+		return;
+	}
 	if(COND_CS())
 	{
 		uint offset = OPER_I_16();
@@ -4272,6 +4362,11 @@ static void m68k_op_bcs_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bne_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_NE(), 1);
+		return;
+	}
 	if(COND_NE())
 	{
 		uint offset = OPER_I_16();
@@ -4287,6 +4382,11 @@ static void m68k_op_bne_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_beq_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_EQ(), 1);
+		return;
+	}
 	if(COND_EQ())
 	{
 		uint offset = OPER_I_16();
@@ -4302,6 +4402,11 @@ static void m68k_op_beq_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bvc_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_VC(), 1);
+		return;
+	}
 	if(COND_VC())
 	{
 		uint offset = OPER_I_16();
@@ -4317,6 +4422,11 @@ static void m68k_op_bvc_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bvs_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_VS(), 1);
+		return;
+	}
 	if(COND_VS())
 	{
 		uint offset = OPER_I_16();
@@ -4332,6 +4442,11 @@ static void m68k_op_bvs_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bpl_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_PL(), 1);
+		return;
+	}
 	if(COND_PL())
 	{
 		uint offset = OPER_I_16();
@@ -4347,6 +4462,11 @@ static void m68k_op_bpl_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bmi_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_MI(), 1);
+		return;
+	}
 	if(COND_MI())
 	{
 		uint offset = OPER_I_16();
@@ -4362,6 +4482,11 @@ static void m68k_op_bmi_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bge_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_GE(), 1);
+		return;
+	}
 	if(COND_GE())
 	{
 		uint offset = OPER_I_16();
@@ -4377,6 +4502,11 @@ static void m68k_op_bge_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_blt_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_LT(), 1);
+		return;
+	}
 	if(COND_LT())
 	{
 		uint offset = OPER_I_16();
@@ -4392,6 +4522,11 @@ static void m68k_op_blt_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_bgt_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_GT(), 1);
+		return;
+	}
 	if(COND_GT())
 	{
 		uint offset = OPER_I_16();
@@ -4407,6 +4542,11 @@ static void m68k_op_bgt_16(m68ki_cpu_core* m68ki_cpu)
 
 static void m68k_op_ble_16(m68ki_cpu_core* m68ki_cpu)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, COND_LE(), 1);
+		return;
+	}
 	if(COND_LE())
 	{
 		uint offset = OPER_I_16();
@@ -22320,6 +22460,8 @@ static void m68k_op_move_16_tos_ai(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_AY_AI_16(m68ki_cpu);
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;
@@ -22333,6 +22475,8 @@ static void m68k_op_move_16_tos_pi(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_AY_PI_16(m68ki_cpu);
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;
@@ -22346,6 +22490,8 @@ static void m68k_op_move_16_tos_pd(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_AY_PD_16(m68ki_cpu);
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;
@@ -22359,6 +22505,8 @@ static void m68k_op_move_16_tos_di(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_AY_DI_16(m68ki_cpu);
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;
@@ -22372,6 +22520,8 @@ static void m68k_op_move_16_tos_ix(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_AY_IX_16(m68ki_cpu);
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;
@@ -22385,6 +22535,8 @@ static void m68k_op_move_16_tos_aw(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_AW_16(m68ki_cpu);
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;
@@ -22398,6 +22550,8 @@ static void m68k_op_move_16_tos_al(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_AL_16(m68ki_cpu);
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;
@@ -22411,6 +22565,8 @@ static void m68k_op_move_16_tos_pcdi(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_PCDI_16(m68ki_cpu);
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;
@@ -22424,6 +22580,8 @@ static void m68k_op_move_16_tos_pcix(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_PCIX_16(m68ki_cpu);
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;
@@ -22437,6 +22595,8 @@ static void m68k_op_move_16_tos_i(m68ki_cpu_core* m68ki_cpu)
 	if(FLAG_S)
 	{
 		uint new_sr = OPER_I_16();
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(m68ki_cpu, new_sr);
 		return;

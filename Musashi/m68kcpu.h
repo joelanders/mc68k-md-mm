@@ -1504,6 +1504,22 @@ static inline void m68ki_branch_32(m68ki_cpu_core* m68ki_cpu, uint offset)
 	m68ki_pc_changed(REG_PC);
 }
 
+/* MCF5206EUM table 3-11: branch prediction depends on displacement sign.
+ * The static table contributes three cycles in each case. */
+static inline void m68ki_cf_bcc(m68ki_cpu_core* m68ki_cpu, int taken, int word)
+{
+	const sint offset = word ? MAKE_INT_16(OPER_I_16()) : MAKE_INT_8(REG_IR);
+	if(taken)
+	{
+		if(word) REG_PC -= 2;
+		m68ki_trace_t0();
+		REG_PC += offset;
+		if(offset < 0) ADD_CYCLES(1);
+	}
+	else if(offset >= 0)
+		ADD_CYCLES(2);
+}
+
 /* ---------------------------- Status Register --------------------------- */
 
 /* Set the S flag and change the active stack pointer.
@@ -1878,6 +1894,9 @@ static inline void m68ki_exception_trapN(m68ki_cpu_core* m68ki_cpu, uint vector)
 	uint sr = m68ki_init_exception(m68ki_cpu);
 	m68ki_stack_frame_0000(m68ki_cpu, REG_PC, sr, vector);
 	m68ki_jump_vector(m68ki_cpu, vector);
+
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+		return; /* The static TRAP timing includes exception entry. */
 
 	/* Use up some clock cycles and undo the instruction's cycles */
 	USE_CYCLES(CYC_EXCEPTION[vector] - CYC_INSTRUCTION[REG_IR]);

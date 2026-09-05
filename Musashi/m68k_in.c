@@ -2288,6 +2288,11 @@ M68KMAKE_OP(asl, 16, ., .)
 
 M68KMAKE_OP(bcc, 8, ., .)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, M68KMAKE_CC, 0);
+		return;
+	}
 	if(M68KMAKE_CC)
 	{
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -2300,6 +2305,11 @@ M68KMAKE_OP(bcc, 8, ., .)
 
 M68KMAKE_OP(bcc, 16, ., .)
 {
+	if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE))
+	{
+		m68ki_cf_bcc(m68ki_cpu, M68KMAKE_CC, 1);
+		return;
+	}
 	if(M68KMAKE_CC)
 	{
 		uint offset = OPER_I_16();
@@ -6750,6 +6760,8 @@ M68KMAKE_OP(move, 16, tos, .)
 	if(FLAG_S)
 	{
 		uint new_sr = M68KMAKE_GET_OPER_AY_16;
+		if(CPU_TYPE_IS_COLDFIRE(CPU_TYPE) && REG_IR == 0x46fc && (new_sr & 0x2000))
+			ADD_CYCLES(6); /* MCF5206EUM table 3-9, note 2. */
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		m68ki_set_sr(new_sr);
 		return;
