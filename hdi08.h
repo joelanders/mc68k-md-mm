@@ -96,6 +96,12 @@ namespace mc68k
 		void icr(uint8_t _icr) { write8(PeriphAddress::HdiICR, _icr); }
 
 		bool canReceiveData();
+		// A status callback may latch data after its input status was sampled.
+		// Merge the current receive-latch flag without invoking callbacks again.
+		uint8_t refreshReceiveStatus(uint8_t _status)
+		{
+			return (_status & ~Rxdf) | (PeripheralBase::read8(PeriphAddress::HdiISR) & Rxdf);
+		}
 
 		// Depth of the not-yet-latched receive queue (words the host has queued but not read).
 		size_t rxDataSize() const { return m_rxData.size(); }
