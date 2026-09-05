@@ -3,6 +3,7 @@
 #include <array>
 #include <deque>
 #include <functional>
+#include <utility>
 
 #include "peripheralBase.h"
 
@@ -86,6 +87,11 @@ namespace mc68k
 		// When cleared, the read-ISR callback owns the transmit-ready state.
 		void setForceTxde(const bool _force) { m_forceTxde = _force; }
 
+		// Legacy latch publication polls the status callback, which may execute a
+		// peer and reenter writeRx before RXDF is published. Disable that polling
+		// to publish incoming data without callbacks. Configure before transfers.
+		void setReceiveLatchStatusPolling(bool _enabled) { m_receiveLatchStatusPolling = _enabled; }
+
 		uint8_t icr()
 		{
 			return PeripheralBase::read8(PeriphAddress::HdiICR);
@@ -95,6 +101,12 @@ namespace mc68k
 		void icr(uint8_t _icr) { write8(PeriphAddress::HdiICR, _icr); }
 
 		bool canReceiveData();
+		// A status callback may latch data after its input status was sampled.
+		// Merge the current receive-latch flag without invoking callbacks again.
+		uint8_t refreshReceiveStatus(uint8_t _status)
+		{
+			return (_status & ~Rxdf) | (PeripheralBase::read8(PeriphAddress::HdiISR) & Rxdf);
+		}
 
 		// Depth of the not-yet-latched receive queue (words the host has queued but not read).
 		size_t rxDataSize() const { return m_rxData.size(); }
@@ -123,6 +135,13 @@ namespace mc68k
 		}
 		void setWriteTxCallback(const CallbackWriteTx& _writeTxCallback);
 		void setWriteIrqCallback(const CallbackWriteIrq& _writeIrqCallback);
+		// Optional shared command lifecycle. Configure and call on the machine
+		// owner; without these callbacks legacy synchronous acknowledgement remains.
+		void setHostCommandCallbacks(std::function<bool()> _pending, std::function<void()> _cancel)
+		{
+			m_hostCommandPending = std::move(_pending);
+			m_cancelHostCommand = std::move(_cancel);
+		}
 		void setReadIsrCallback(const CallbackReadIsr& _readIsrCallback);
 		void setInitHdi08Callback(const CallbackInitHdi08& _callback);
 		void setIcrWriteCallback(const CallbackIcrWrite& _callback);
@@ -167,8 +186,11 @@ namespace mc68k
 		CallbackRxEmpty m_rxEmptyCallback;
 		CallbackWriteTx m_writeTxCallback;
 		CallbackWriteIrq m_writeIrqCallback;
+		std::function<bool()> m_hostCommandPending;
+		std::function<void()> m_cancelHostCommand;
 		CallbackReadIsr m_readIsrCallback;
 		bool m_forceTxde = true;
+		bool m_receiveLatchStatusPolling = true;
 		CallbackInitHdi08 m_initHdi08Callback;
 		CallbackIcrWrite m_icrWriteCallback;
 		CallbackRxStateChanged m_rxStateChangedCallback;
