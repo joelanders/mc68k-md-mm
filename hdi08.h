@@ -87,6 +87,11 @@ namespace mc68k
 		// When cleared, the read-ISR callback owns the transmit-ready state.
 		void setForceTxde(const bool _force) { m_forceTxde = _force; }
 
+		// Legacy latch publication polls the status callback, which may execute a
+		// peer and reenter writeRx before RXDF is published. Disable that polling
+		// to publish incoming data without callbacks. Configure before transfers.
+		void setReceiveLatchStatusPolling(bool _enabled) { m_receiveLatchStatusPolling = _enabled; }
+
 		uint8_t icr()
 		{
 			return PeripheralBase::read8(PeriphAddress::HdiICR);
@@ -185,6 +190,7 @@ namespace mc68k
 		std::function<void()> m_cancelHostCommand;
 		CallbackReadIsr m_readIsrCallback;
 		bool m_forceTxde = true;
+		bool m_receiveLatchStatusPolling = true;
 		CallbackInitHdi08 m_initHdi08Callback;
 		CallbackIcrWrite m_icrWriteCallback;
 		CallbackRxStateChanged m_rxStateChangedCallback;

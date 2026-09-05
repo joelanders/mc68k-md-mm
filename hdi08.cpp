@@ -362,9 +362,13 @@ namespace mc68k
 		m_rxd = m_rxData.front();
 		m_rxData.pop_front();
 
-		++m_pollRxDepth;
-		auto isr = Hdi08::isr();
-		--m_pollRxDepth;
+		auto isr = PeripheralBase::read8(PeriphAddress::HdiISR);
+		if(m_receiveLatchStatusPolling)
+		{
+			++m_pollRxDepth;
+			isr = Hdi08::isr();
+			--m_pollRxDepth;
+		}
 
 		write8(PeriphAddress::HdiISR, isr | Rxdf);
 		m_readFlags = WordFlags::Mask;
