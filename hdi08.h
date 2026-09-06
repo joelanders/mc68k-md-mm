@@ -160,7 +160,6 @@ namespace mc68k
 		std::deque<uint32_t> m_txData;
 		std::deque<uint32_t> m_rxData;
 		uint32_t m_rxd = 0;
-		uint32_t m_pollRxDepth = 0;
 		std::deque<uint8_t> m_pendingInterruptRequests;
 		uint32_t m_readTimeoutCycles = 0;
 

@@ -127,15 +127,13 @@ namespace mc68k
 
 	void Hdi08::writeRx(uint32_t _word)
 	{
-		static constexpr uint32_t g_maxPollRxDepth = 64;
 		m_rxData.push_back(_word);
 
 		// Read the latch state directly: isr() invokes a host callback that may enqueue
 		// another word and re-enter this method.
 		const auto s = PeripheralBase::read8(PeriphAddress::HdiISR);
 
-		// Bound callback-driven nesting and leave excess words queued for the host.
-		if(!(s & Rxdf) && m_pollRxDepth < g_maxPollRxDepth)
+		if(!(s & Rxdf))
 			pollRx();
 	}
 
@@ -349,17 +347,16 @@ namespace mc68k
 
 	bool Hdi08::pollRx()
 	{
-		if(m_rxData.empty())
+		const auto isr = PeripheralBase::read8(PeriphAddress::HdiISR);
+		if(m_rxData.empty() || (isr & Rxdf))
 			return false;
 
 		m_readTimeoutCycles = 0;
 		m_rxd = m_rxData.front();
 		m_rxData.pop_front();
 
-		++m_pollRxDepth;
-		auto isr = Hdi08::isr();
-		--m_pollRxDepth;
-
+		// isr() invokes the peer's callback, which can enqueue another word.
+		// Publish the latch directly so that callback cannot replace an unread word.
 		write8(PeriphAddress::HdiISR, isr | Rxdf);
 		m_readFlags = WordFlags::Mask;
 

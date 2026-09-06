@@ -40,11 +40,13 @@
 
 #include "m68kops.h"
 #include "m68kcpu.h"
+#include "m68kcfcycles.h"
 
 extern void m68040_fpu_op0(m68ki_cpu_core* m68ki_cpu);
 extern void m68040_fpu_op1(m68ki_cpu_core* m68ki_cpu);
 extern void m68881_mmu_ops(m68ki_cpu_core* m68ki_cpu);
 extern unsigned char m68ki_cycles[][0x10000];
+static unsigned char m68ki_cf_cycles[0x10000];
 extern void (*m68ki_instruction_jump_table[0x10000])(m68ki_cpu_core*); /* opcode handler jump table */
 extern void m68ki_build_opcode_table(void);
 
@@ -858,12 +860,11 @@ void m68k_set_cpu_type(m68ki_cpu_core* m68ki_cpu, unsigned int cpu_type)
 			HAS_PMMU	 = 0;
 			return;
 		case M68K_CPU_TYPE_MCF5206E:
-			/* ColdFire V2 configuration from the MCF5206E User's Manual.
-			 * Reuse the 68020 timing column until dedicated timing is available. */
+			/* ColdFire V2 core timing from MCF5206EUM, chapter 3. */
 			CPU_TYPE         = CPU_TYPE_COLDFIRE;
 			CPU_ADDRESS_MASK = 0xffffffff;			/* ColdFire is 32-bit */
 			CPU_SR_MASK      = 0xf71f;
-			CYC_INSTRUCTION  = m68ki_cycles[2];
+			CYC_INSTRUCTION  = m68ki_cf_cycles;
 			CYC_EXCEPTION    = m68ki_exception_cycle_table[2];
 			CYC_BCC_NOTAKE_B = -2;
 			CYC_BCC_NOTAKE_W = 0;
@@ -871,7 +872,7 @@ void m68k_set_cpu_type(m68ki_cpu_core* m68ki_cpu, unsigned int cpu_type)
 			CYC_DBCC_F_EXP   = 4;
 			CYC_SCC_R_TRUE   = 0;
 			CYC_MOVEM_W      = 2;
-			CYC_MOVEM_L      = 2;
+			CYC_MOVEM_L      = 0; /* One cycle per transferred register. */
 			CYC_SHIFT        = 0;
 			CYC_RESET        = 518;
 			HAS_PMMU	 = 0;
@@ -1142,8 +1143,14 @@ void m68k_init(m68ki_cpu_core* m68ki_cpu)
 
 	/* The first call to this function initializes the opcode handler jump table */
 	if(!emulation_initialized)
-		{
+	{
+		unsigned int op;
 		m68ki_build_opcode_table();
+		for(op = 0; op < 0x10000; ++op)
+		{
+			const unsigned char cycles = m68ki_cf_base_cycles(op);
+			m68ki_cf_cycles[op] = cycles ? cycles : m68ki_cycles[2][op];
+		}
 		emulation_initialized = 1;
 	}
 
