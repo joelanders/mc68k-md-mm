@@ -64,6 +64,14 @@ if(BUILD_TESTING)
 	add_test(NAME mc68kHdi08ReceiveTest COMMAND mc68kHdi08ReceiveTest)
 	set_tests_properties(mc68kHdi08ReceiveTest PROPERTIES LABELS "UnitTest")
 
+	add_executable(mc68kHdi08CommandTest test/hdi08_command_test.cpp)
+	target_link_libraries(mc68kHdi08CommandTest PRIVATE 68kEmu)
+	target_include_directories(mc68kHdi08CommandTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+	target_compile_features(mc68kHdi08CommandTest PRIVATE cxx_std_17)
+	add_test(NAME mc68kHdi08CommandTest COMMAND mc68kHdi08CommandTest)
+	set_tests_properties(mc68kHdi08CommandTest PROPERTIES LABELS "UnitTest")
+	add_dependencies(mc68kHdi08ReceiveTest mc68kHdi08CommandTest)
+
 	add_executable(mc68kColdFireDivideTest test/coldfire_div_test.cpp)
 	target_link_libraries(mc68kColdFireDivideTest PRIVATE 68kEmu)
 	target_include_directories(mc68kColdFireDivideTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -74,5 +82,5 @@ if(BUILD_TESTING)
 	# Integrations can require this fixture so focused CTest selections still
 	# exercise the instruction and host-port contracts they depend on.
 	set_tests_properties(mc68kColdFireTimingTest mc68kHdi08ReceiveTest
-		mc68kColdFireDivideTest PROPERTIES FIXTURES_SETUP Mc68kCore)
+		mc68kColdFireDivideTest mc68kHdi08CommandTest PROPERTIES FIXTURES_SETUP Mc68kCore)
 endif()
