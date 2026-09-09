@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - release/md-mm-public-alpha-20260826
+      - release/md-mm-alpha
   pull_request:
 
 permissions:
