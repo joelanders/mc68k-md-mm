@@ -1,0 +1,26 @@
+name: MD/MM integration policy
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review, converted_to_draft, labeled, unlabeled]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration-policy:
+    name: MD/MM integration policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      TARGET: ${{ github.event.pull_request.base.ref || github.ref_name }}
+    steps:
+      - name: Check destination
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$TARGET" != release/md-mm-alpha ]]; then
+            echo '::error::Retarget to release/md-mm-alpha before merging. Stacked drafts may remain open but cannot pass this gate.'
+            exit 1
+          fi
