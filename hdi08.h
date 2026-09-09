@@ -46,6 +46,7 @@ namespace mc68k
 		using CallbackWriteTx = std::function<void(uint32_t)>;
 		using CallbackWriteIrq = std::function<void(uint8_t)>;
 		using CallbackReadIsr = std::function<uint8_t(uint8_t)>;
+		using CallbackReadCvr = std::function<uint8_t(uint8_t)>;
 		using CallbackInitHdi08 = std::function<void()>;
 		using CallbackIcrWrite = std::function<void(uint8_t)>;
 		using CallbackRxStateChanged = std::function<void()>;
@@ -124,6 +125,7 @@ namespace mc68k
 		void setWriteTxCallback(const CallbackWriteTx& _writeTxCallback);
 		void setWriteIrqCallback(const CallbackWriteIrq& _writeIrqCallback);
 		void setReadIsrCallback(const CallbackReadIsr& _readIsrCallback);
+		void setReadCvrCallback(const CallbackReadCvr& _callback);
 		void setInitHdi08Callback(const CallbackInitHdi08& _callback);
 		void setIcrWriteCallback(const CallbackIcrWrite& _callback);
 		void setRxStateChangedCallback(const CallbackRxStateChanged& _callback);
@@ -167,6 +169,7 @@ namespace mc68k
 		CallbackWriteTx m_writeTxCallback;
 		CallbackWriteIrq m_writeIrqCallback;
 		CallbackReadIsr m_readIsrCallback;
+		CallbackReadCvr m_readCvrCallback;
 		bool m_forceTxde = true;
 		CallbackInitHdi08 m_initHdi08Callback;
 		CallbackIcrWrite m_icrWriteCallback;
