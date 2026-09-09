@@ -13,6 +13,7 @@ namespace mc68k
 		setWriteTxCallback(nullptr);
 		setWriteIrqCallback(nullptr);
 		setReadIsrCallback(nullptr);
+		setReadCvrCallback(nullptr);
 		setInitHdi08Callback(nullptr);
 		setIcrWriteCallback(nullptr);
 		setRxStateChangedCallback(nullptr);
@@ -32,7 +33,7 @@ namespace mc68k
 		case PeriphAddress::HdiTXM:	return readRX(WordFlags::M);
 		case PeriphAddress::HdiTXL:	return readRX(WordFlags::L);
 		case PeriphAddress::HdiCVR:
-			return PeripheralBase::read8(_addr);
+			return m_readCvrCallback(PeripheralBase::read8(_addr));
 		}
 		const auto r = PeripheralBase::read8(_addr);
 //		MCLOG("read8 addr=" << MCHEXN(_addr, 8));
@@ -43,6 +44,8 @@ namespace mc68k
 	{
 		switch (_addr)
 		{
+		case PeriphAddress::HdiICR:
+			return (uint16_t(read8(PeriphAddress::HdiICR)) << 8) | read8(PeriphAddress::HdiCVR);
 		case PeriphAddress::HdiUnused4:
 			return read8(PeriphAddress::HdiTXH);
 		case PeriphAddress::HdiTXM:
@@ -81,7 +84,7 @@ namespace mc68k
 //				MCLOG("HDI08 Host Vector Interrupt Request, interrupt vector = " << MCHEXN(addr, 2));
 				m_writeIrqCallback(addr);
 
-				const auto val = read8(PeriphAddress::HdiCVR);
+				const auto val = PeripheralBase::read8(PeriphAddress::HdiCVR);
 				PeripheralBase::write8(PeriphAddress::HdiCVR, val & ~Hc);
 
 //				write8(_addr, _val & ~Hc);
@@ -223,6 +226,11 @@ namespace mc68k
 			m_initHdi08Callback = _callback;
 		else
 			m_initHdi08Callback = [] {};
+	}
+
+	void Hdi08::setReadCvrCallback(const CallbackReadCvr& _callback)
+	{
+		m_readCvrCallback = _callback ? _callback : CallbackReadCvr([](const uint8_t value) { return value; });
 	}
 
 	void Hdi08::setIcrWriteCallback(const CallbackIcrWrite& _callback)

@@ -48,6 +48,22 @@ int testReceiveOrder(const bool littleEndian)
 
 int main()
 {
+	{
+		mc68k::Hdi08 port;
+		unsigned reads = 0, commands = 0;
+		port.setWriteIrqCallback([&](uint8_t vector) { if(vector == 0x16) ++commands; });
+		port.setReadCvrCallback([&](uint8_t value) { ++reads; return uint8_t(value | mc68k::Hdi08::Hc); });
+		port.write8(mc68k::PeriphAddress::HdiCVR, 0x8b);
+		if(commands != 1 || reads != 0
+			|| port.read8(mc68k::PeriphAddress::HdiCVR) != 0x8b
+			|| (port.read16(mc68k::PeriphAddress::HdiICR) & 0xff) != 0x8b || reads != 2)
+		{
+			std::cerr << "CVR callback not preserved across byte/word reads or reentered on write\n";
+			return 1;
+		}
+		port.setReadCvrCallback(nullptr);
+		if(port.read8(mc68k::PeriphAddress::HdiCVR) != 0x0b) return 1;
+	}
 	if(testReceiveOrder(false) || testReceiveOrder(true))
 		return 1;
 	std::cout << "HI08 receive callback preserves FIFO order in both byte orders\n";
