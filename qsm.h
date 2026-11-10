@@ -97,6 +97,9 @@ namespace mc68k
 		void set(ScsrBits _bit);
 		uint16_t readSciRX();
 
+		uint32_t qspiWordDelayCycles(uint8_t _queueIndex);
+
+		static PeriphAddress commandRamAddr(uint8_t _offset);
 		static PeriphAddress transmitRamAddr(uint8_t _offset);
 		static PeriphAddress receiveRamAddr(uint8_t _offset);
 
@@ -108,8 +111,8 @@ namespace mc68k
 		Port m_portQS;
 		Qspi m_qspi;
 		uint8_t m_nextQueue = 0xff;
+		uint8_t m_currentQueue = 0xff;
 		uint32_t m_spiDelay = 0;
-		std::deque<uint16_t> m_spiTxData;
 
 		std::mutex m_mutexSciTx;
 		std::deque<uint16_t> m_sciTxData;
