@@ -25,18 +25,8 @@ namespace mc68k
 
 	constexpr uint32_t g_sciRxDelay = 50;
 
-	// QSPI per-word transfer time in Fsys cycles. The SPI clock is Fsys/(2*SPBR)
-	// and a word is BITS bits wide (SPCR0[13:10], which encodes 8..16 with 0
-	// meaning 16). So one word takes BITS * 2 * SPBR cycles. Modelling BITS is
-	// essential: the microQ uses 16-bit QSPI words, but the Q uses 8-bit words, so
-	// a fixed 16-bit assumption ran the Q's QSPI — and the demo sequencer it clocks
-	// (QSPI IRQ, vector $3F) — at half speed.
-	static uint32_t qspiWordDelayCycles(const uint16_t _spcr0)
-	{
-		const uint32_t spbr = _spcr0 & 0xff;
-		const uint32_t bits = (_spcr0 >> 10) & 0xf;
-		return std::max(64u, (bits ? bits : 16) * 2 * spbr);
-	}
+	constexpr uint8_t g_cmd_dtMask			= (1<<5);
+	constexpr uint8_t g_cmd_dsckMask		= (1<<4);
 
 	Qsm::Qsm(Mc68k& _mc68k) : m_mc68k(_mc68k), m_qspi(*this)
 	{
@@ -58,6 +48,10 @@ namespace mc68k
 			return;
 		case PeriphAddress::Spcr1:
 //			MCLOG("Set SPCR1 to " << MCHEXN(_val, 4));
+			// writing the value a control register already has does not affect QSPI operation (MC68331UM 6.3.1.1).
+			// The XT restarts its queue with SPCR1 = $8000 while a transfer may still run.
+			if(_val == prev)
+				return;
 			cancelTransmit();
 			if(!(prev & g_spcr1_speMask) && (_val & g_spcr1_speMask))
 				startTransmit();
@@ -69,6 +63,8 @@ namespace mc68k
 			break;
 		case PeriphAddress::Spcr3:
 //			MCLOG("Set SPCR3 to " << MCHEXN(_val, 4));
+			if(_val == prev)
+				break;
 			cancelTransmit();
 			// acknowledge halt if halt requested
 			if(!(prev & g_spcr3_haltMask) && (_val & g_spcr3_haltMask))
@@ -139,11 +135,16 @@ namespace mc68k
 				startTransmit();
 			return;
 		case PeriphAddress::Spcr2:
-//			MCLOG("Set SPCR2 to " << MCHEXN(_val, 4));
+			// the upper byte holds SPIFIE, WREN, WRTO and ENDQP. Only rewriting NEWQP restarts the queue (MC68331UM
+			// 6.3.1.1), an interrupt handler that toggles SPIFIE with bclr/bset on every transfer must not repeat a word
+			return;
+		case PeriphAddress::Spcr2LSB:
 			if(spcr1() & g_spcr1_speMask)
 				startTransmit();
 			return;
 		case PeriphAddress::Spcr3:
+			if(newVal == prev)
+				return;
 			cancelTransmit();
 			// acknowledge halt if halt requested
 			if(!(prev & g_spcr3_haltMask) && (newVal & g_spcr3_haltMask))
@@ -210,10 +211,18 @@ namespace mc68k
 
 		if(m_nextQueue != 0xff)
 		{
-			if(m_spiDelay > 0)
-				m_spiDelay -= std::min(m_spiDelay, _deltaCycles);
+			if(m_spiDelay > _deltaCycles)
+			{
+				m_spiDelay -= _deltaCycles;
+			}
 			else
+			{
+				// the slot ended within this instruction, the rest of its cycles already count for the next one
+				const auto remainder = _deltaCycles - m_spiDelay;
+				m_spiDelay = 0;
 				execTransmit();
+				m_spiDelay -= std::min(m_spiDelay, remainder);
+			}
 		}
 
 		// SCI
@@ -307,6 +316,11 @@ namespace mc68k
 		// clear completion flag
 		spsr(spsr() & ~g_spsr_spifMask);
 
+		// An idle QSPI executes the first entry right away. While a transfer runs, a new NEWQP takes effect when the
+		// current word's slot has elapsed (MC68331UM 6.3.1.1)
+		if(m_nextQueue == 0xff)
+			m_spiDelay = 0;
+
 		m_nextQueue = _startAtZero ? 0 : (spcr2() & g_spcr2_newqpMask);
 
 		// Do NOT process the SPI queue synchronously — let exec() handle it.
@@ -328,36 +342,46 @@ namespace mc68k
 		if(!wrap && (spsr() & g_spsr_spifMask))
 			return;
 
-		// SPI baud-rate delay until this word completes (see qspiWordDelayCycles).
-		m_spiDelay = qspiWordDelayCycles(spcr0());
+		// the slot of the word in flight has elapsed, including its delay after transfer
+		if(m_currentQueue != 0xff)
+		{
+			// update completed queue index
+			auto sr = spsr();
+			sr &= ~g_spsr_cptqpMask;
+			sr |= m_currentQueue;
+
+			spsr(sr);
+
+			m_currentQueue = 0xff;
+
+			const auto endqp = (spcr2() & g_spcr2_endqpMask) >> 8;
+
+			if(m_nextQueue > endqp)
+			{
+				finishTransfer();
+
+				// in wrap mode, the first entry of the queue follows without a gap
+				if(m_nextQueue == 0xff)
+					return;
+			}
+		}
+
+		// An entry's command and transmit data are read at the start of its slot, before the delay before SCK
+		// (MC68331UM Figure 6-5). The next entry is read when this slot has elapsed, see qspiWordDelayCycles
+		m_spiDelay = qspiWordDelayCycles(m_nextQueue);
 
 		// push out data
 		const auto data = PeripheralBase::read16(transmitRamAddr(m_nextQueue));
-		m_spiTxData.push_back(data);
 		m_spiTxCallback(data, m_nextQueue);
 
-		// update completed queue index
-		auto sr = spsr();
-		sr &= ~g_spsr_cptqpMask;
-		sr |= m_nextQueue;
-
-		spsr(sr);
-
 		// advance to next or end
-		++m_nextQueue;
-
-		const auto endqp = (spcr2() & g_spcr2_endqpMask) >> 8;
-		const auto finished = m_nextQueue > endqp;
-
-		if(finished)
-		{
-			finishTransfer();
-		}
+		m_currentQueue = m_nextQueue++;
 	}
 
 	void Qsm::cancelTransmit()
 	{
 		m_nextQueue = 0xff;
+		m_currentQueue = 0xff;
 
 		// set completion flag
 		spsr(spsr() | g_spsr_spifMask);
@@ -466,11 +490,6 @@ namespace mc68k
 			startTransmit(wrapToZero);
 			if (savedSpif)
 				spsr(spsr() | g_spsr_spifMask);
-
-			// Baud-rate delay for the first word of the restarted transfer; without
-			// it, exec() sees m_spiDelay==0 and fires immediately (one QSPI IRQ per
-			// exec() call). See qspiWordDelayCycles.
-			m_spiDelay = qspiWordDelayCycles(spcr0());
 		}
 
 		if(halt)
@@ -478,6 +497,34 @@ namespace mc68k
 			// acknowledge halt
 			spsr(spsr() | g_spsr_haltAckMask);
 		}
+	}
+
+	// Transfer time of one queue entry in Fsys cycles (MC68331 User's Manual 6.3.4): delay before SCK, BITS bits
+	// at Fsys/(2*SPBR), then the delay after transfer. BITS is SPCR0[13:10], 0 meaning 16 (BITSE is not modelled).
+	// The delays depend on the entry's command:
+	// - DSCK set: DSCKL (SPCR1[14:8], 0 meaning 128) cycles, else half an SCK period
+	// - DT set: 32 * DTL (SPCR1[7:0], 0 meaning 256) cycles, else the standard 17
+	// Without the delays, a firmware that counts QSPI transfers as its time base ran 6.7% fast.
+	uint32_t Qsm::qspiWordDelayCycles(const uint8_t _queueIndex)
+	{
+		const auto cr0 = spcr0();
+		const auto cr1 = spcr1();
+		const auto command = PeripheralBase::read8(commandRamAddr(_queueIndex & 0xf));
+
+		const uint32_t spbr = cr0 & 0xff;
+		const uint32_t bits = (cr0 >> 10) & 0xf;
+		const uint32_t dsckl = (cr1 >> 8) & 0x7f;
+		const uint32_t dtl = cr1 & 0xff;
+
+		const uint32_t delayBeforeSck = (command & g_cmd_dsckMask) ? (dsckl ? dsckl : 128) : spbr;
+		const uint32_t delayAfterTransfer = (command & g_cmd_dtMask) ? 32 * (dtl ? dtl : 256) : 17;
+
+		return std::max(64u, delayBeforeSck + (bits ? bits : 16) * 2 * spbr + delayAfterTransfer);
+	}
+
+	PeriphAddress Qsm::commandRamAddr(const uint8_t _offset)
+	{
+		return static_cast<PeriphAddress>(static_cast<uint32_t>(PeriphAddress::CommandRam0) + _offset);
 	}
 
 	PeriphAddress Qsm::transmitRamAddr(const uint8_t _offset)
