@@ -38,6 +38,7 @@ extern "C" {
 #endif
 
 #include "m68k.h"
+#include <stddef.h>
 
 #include <limits.h>
 
@@ -1011,7 +1012,19 @@ struct m68ki_cpu_core_
 	void (*pc_changed_callback)(m68ki_cpu_core* m68ki_cpu, unsigned int new_pc); /* Called when the PC changes by a large amount */
 	void (*set_fc_callback)(m68ki_cpu_core* m68ki_cpu, unsigned int new_fc);     /* Called when the CPU function code changes */
 	void (*instr_hook_callback)(m68ki_cpu_core* m68ki_cpu, unsigned int pc);     /* Called every instruction cycle prior to execution */
+
+	/* Optional host page for opcode stream fetches, published by the host (see
+	 * m68k_set_immediate_page). imm_page_tag is the 4 KiB-aligned address of the
+	 * page with bit 0 set; zero means no page. Only the pointer is cached, never
+	 * the contents, so writes to the page stay visible at once. */
+	uint imm_page_tag;
+	const unsigned char* imm_page_data;
 };
+
+/* The part of the core that describes the CPU. The published code page behind it
+ * belongs to the host: two hosts whose CPUs are in the same state hold different
+ * pointers. Compare this many bytes to compare two CPUs. */
+#define M68KI_CPU_STATE_SIZE offsetof(m68ki_cpu_core, imm_page_tag)
 
 
 extern uint           m68ki_tracing;
@@ -1076,7 +1089,16 @@ static inline uint m68ki_read_imm_16(m68ki_cpu_core* m68ki_cpu)
 }
 #else
 	REG_PC += 2;
-	return m68k_read_immediate_16(m68ki_cpu, ADDRESS_68K(REG_PC-2));
+	{
+		const uint address = ADDRESS_68K(REG_PC-2);
+		/* An even address inside the published page: no host call. */
+		if(((address & ~0xffeu) | 1u) == m68ki_cpu->imm_page_tag)
+		{
+			const unsigned char* const data = m68ki_cpu->imm_page_data + (address & 0xffeu);
+			return ((uint)data[0] << 8) | data[1];
+		}
+		return m68k_read_immediate_16(m68ki_cpu, address);
+	}
 #endif /* M68K_EMULATE_PREFETCH */
 }
 
@@ -1121,7 +1143,16 @@ static inline uint m68ki_read_imm_32(m68ki_cpu_core* m68ki_cpu)
 	m68ki_set_fc(FLAG_S | FUNCTION_CODE_USER_PROGRAM); /* auto-disable (see m68kcpu.h) */
 	m68ki_check_address_error(REG_PC, MODE_READ, FLAG_S | FUNCTION_CODE_USER_PROGRAM); /* auto-disable (see m68kcpu.h) */
 	REG_PC += 4;
-	return m68k_read_immediate_32(m68ki_cpu, ADDRESS_68K(REG_PC-4));
+	{
+		const uint address = ADDRESS_68K(REG_PC-4);
+		/* Both words inside the published page. */
+		if(((address & ~0xffeu) | 1u) == m68ki_cpu->imm_page_tag && (address & 0xffeu) <= 0xffcu)
+		{
+			const unsigned char* const data = m68ki_cpu->imm_page_data + (address & 0xffeu);
+			return ((uint)data[0] << 24) | ((uint)data[1] << 16) | ((uint)data[2] << 8) | data[3];
+		}
+		return m68k_read_immediate_32(m68ki_cpu, address);
+	}
 #endif /* M68K_EMULATE_PREFETCH */
 }
 
