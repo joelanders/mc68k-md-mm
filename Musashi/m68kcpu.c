@@ -1037,7 +1037,7 @@ int m68k_execute(m68ki_cpu_core* m68ki_cpu, int num_cycles)
 	return m68ki_cpu->m68ki_initial_cycles - GET_CYCLES();
 }
 
-int m68k_execute_one(m68ki_cpu_core* m68ki_cpu)
+static inline int m68ki_execute_one_inline(m68ki_cpu_core* m68ki_cpu)
 {
 	if (RESET_CYCLES) {
 		int rc = RESET_CYCLES;
@@ -1073,6 +1073,45 @@ int m68k_execute_one(m68ki_cpu_core* m68ki_cpu)
 		SET_CYCLES(0);
 
 	return m68ki_cpu->m68ki_initial_cycles - GET_CYCLES();
+}
+
+int m68k_execute_one(m68ki_cpu_core* m68ki_cpu)
+{
+	return m68ki_execute_one_inline(m68ki_cpu);
+}
+
+void m68k_set_immediate_page(m68ki_cpu_core* m68ki_cpu, unsigned int page_address, const unsigned char* data)
+{
+	m68ki_cpu->imm_page_tag = data ? ((page_address & ~0xfffu) | 1u) : 0;
+	m68ki_cpu->imm_page_data = data;
+}
+
+unsigned int m68k_execute_run(m68ki_cpu_core* m68ki_cpu, m68k_run* run)
+{
+	uint64_t elapsed = 0;
+	uint64_t instructions = 0;
+	unsigned int cycles;
+
+	run->ended_on_opcode = 0;
+	for(;;)
+	{
+		cycles = (unsigned int)m68ki_execute_one_inline(m68ki_cpu);
+		*run->cycles += cycles;
+		++instructions;
+		elapsed += cycles;
+		if(REG_IR == run->stop_opcode)
+		{
+			run->ended_on_opcode = 1;
+			break;
+		}
+		if(*run->stop || elapsed >= run->limit)
+			break;
+		*run->clock += cycles;
+		*run->owed += cycles;
+	}
+	run->elapsed = elapsed;
+	run->instructions = instructions;
+	return cycles;
 }
 
 int m68k_cycles_run(m68ki_cpu_core* m68ki_cpu)

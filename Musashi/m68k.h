@@ -30,6 +30,8 @@
 #ifndef M68K__HEADER
 #define M68K__HEADER
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -329,6 +331,41 @@ int m68k_execute(m68ki_cpu_core* m68ki_cpu, int num_cycles);
 
 /* execute exactly one complete instruction.  returns number of cycles used */
 int m68k_execute_one(m68ki_cpu_core* m68ki_cpu);
+
+/* Publish (or, with data == NULL, withdraw) a 4 KiB host page that backs the
+ * opcode stream at page_address. Fetches inside it bypass
+ * m68k_read_immediate_16/32. The host must withdraw the page before the
+ * pointer becomes invalid.
+ */
+void m68k_set_immediate_page(m68ki_cpu_core* m68ki_cpu, unsigned int page_address, const unsigned char* data);
+
+/* A run executes instructions back to back, each exactly as m68k_execute_one
+ * would, for hosts that step their peripherals in bulk.
+ *
+ * An instruction's cycles are added to *cycles as soon as it has executed, and
+ * to *clock and *owed only once the run goes on to the next instruction: the
+ * last instruction's cycles are returned instead, so the host can settle its
+ * peripherals for that instruction the way it does after m68k_execute_one.
+ * A host callback may read and reset *owed in the middle of an instruction.
+ *
+ * The run ends after the instruction during which a host callback set *stop,
+ * after the one that brings the cycles executed in this run to limit or beyond,
+ * and after one whose opcode is stop_opcode (ended_on_opcode is then set).
+ */
+typedef struct m68k_run_
+{
+	uint64_t* cycles;
+	uint64_t* clock;
+	uint32_t* owed;
+	const unsigned char* stop;
+	uint64_t limit;
+	unsigned int stop_opcode;
+	/* results */
+	unsigned int ended_on_opcode;
+	uint64_t elapsed;
+	uint64_t instructions;
+} m68k_run;
+unsigned int m68k_execute_run(m68ki_cpu_core* m68ki_cpu, m68k_run* run);
 
 /* These functions let you read/write/modify the number of cycles left to run
  * while m68k_execute() is running.
